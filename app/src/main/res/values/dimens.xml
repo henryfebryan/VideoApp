@@ -1,0 +1,6 @@
+<resources>
+    <dimen name="font_size_heading_1">20dp</dimen>
+    <dimen name="font_size_heading_2">18dp</dimen>
+    <dimen name="font_size_heading_3">16dp</dimen>
+    <dimen name="font_size_heading_4">14dp</dimen>
+</resources>

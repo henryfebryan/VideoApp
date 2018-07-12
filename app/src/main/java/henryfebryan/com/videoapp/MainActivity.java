@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private  static final String VIDEO_DATE_MODIFIED = "VIDEO_DATE_MODIFIED";
 
     Button btn_record;
+
     TextView tv_path;
 
     ListView lv_videolist;

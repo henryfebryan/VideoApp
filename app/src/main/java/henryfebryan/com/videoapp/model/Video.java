@@ -3,31 +3,26 @@ package henryfebryan.com.videoapp.model;
 import android.graphics.Bitmap;
 
 public class Video {
-    private int VideoId;
+    Bitmap thumnail;
+
     private String VideoName;
     private String VideoDir;
-    Bitmap thumnail;
     private String duration;
     private String lastModified;
+    private String size;
+    private String resolution;
 
     public Video() {
     }
 
-    public Video(int videoId, String videoName, String videoDir, Bitmap thumnail, String duration, String lastModified) {
-        VideoId = videoId;
+    public Video(Bitmap thumnail, String videoName, String videoDir, String duration, String lastModified, String size, String resolution) {
+        this.thumnail = thumnail;
         VideoName = videoName;
         VideoDir = videoDir;
-        this.thumnail = thumnail;
         this.duration = duration;
         this.lastModified = lastModified;
-    }
-
-    public int getVideoId() {
-        return VideoId;
-    }
-
-    public void setVideoId(int videoId) {
-        VideoId = videoId;
+        this.size = size;
+        this.resolution = resolution;
     }
 
     public String getVideoName() {
@@ -68,5 +63,21 @@ public class Video {
 
     public void setLastModified(String lastModified) {
         this.lastModified = lastModified;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getResolution() {
+        return resolution;
+    }
+
+    public void setResolution(String resolution) {
+        this.resolution = resolution;
     }
 }

@@ -35,12 +35,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <Button
-                android:id="@+id/btn_reload"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/ic_refresh_black_24dp"
-                android:backgroundTint="@color/colorPrimary"/>
+
         </LinearLayout>
     </RelativeLayout>
     <TextView
@@ -77,4 +72,11 @@
             android:background="@drawable/ic_videocam_black_24dp"
             android:backgroundTint="@android:color/white"/>
     </LinearLayout>
+    <ProgressBar
+        android:id="@+id/pb_reload_list"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/layout_title_bar"
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </RelativeLayout>

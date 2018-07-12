@@ -17,11 +17,14 @@ import henryfebryan.com.videoapp.model.Video;
 public class WatchVideoActivity extends AppCompatActivity {
 
     Button btn_back;
-    TextView tv_title_video, tv_video_modified;
+    TextView tv_title_video, tv_video_modified, tv_video_duration, tv_video_size, tv_video_resolution, tv_video_path;
     VideoView videoView;
 
     private  static final String VIDEO_PATH = "VIDEO_PATH";
     private  static final String VIDEO_NAME = "VIDEO_NAME";
+    private  static final String VIDEO_SIZE = "VIDEO_SIZE";
+    private  static final String VIDEO_DURATION = "VIDEO_DURATION";
+    private  static final String VIDEO_RESOLUTION = "VIDEO_RESOLUTION";
     private  static final String VIDEO_DATE_MODIFIED = "VIDEO_DATE_MODIFIED";
 
     @Override
@@ -38,10 +41,18 @@ public class WatchVideoActivity extends AppCompatActivity {
         final String sDirVideo = getIntent().getStringExtra(VIDEO_PATH);
         final String sNameVideo = getIntent().getStringExtra(VIDEO_NAME);
         final String sDateModified = getIntent().getStringExtra(VIDEO_DATE_MODIFIED);
+        final String sDuration = getIntent().getStringExtra(VIDEO_DURATION);
+        final String sSize = getIntent().getStringExtra(VIDEO_SIZE);
+        final String sResolution = getIntent().getStringExtra(VIDEO_RESOLUTION);
+
+        videoView.setVideoPath(sDirVideo);
 
         tv_title_video.setText(sNameVideo);
         tv_video_modified.setText(sDateModified);
-        videoView.setVideoPath(sDirVideo);
+        tv_video_duration.setText(sDuration);
+        tv_video_size.setText(sSize);
+        tv_video_resolution.setText(sResolution);
+        tv_video_path.setText(sDirVideo);
 
         MediaController mediaController = new MediaController(this);
         mediaController.setAnchorView(videoView);
@@ -64,6 +75,9 @@ public class WatchVideoActivity extends AppCompatActivity {
         videoView = (VideoView) findViewById(R.id.videoView);
         tv_title_video = (TextView) findViewById(R.id.tv_title_video);
         tv_video_modified = (TextView) findViewById(R.id.tv_video_modified);
+        tv_video_duration = (TextView) findViewById(R.id.tv_video_duration);
+        tv_video_size = (TextView) findViewById(R.id.tv_video_size);
+        tv_video_resolution = (TextView) findViewById(R.id.tv_video_resolution);
+        tv_video_path = (TextView) findViewById(R.id.tv_video_path);
     }
-
 }

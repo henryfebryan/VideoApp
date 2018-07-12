@@ -1,7 +1,11 @@
 package henryfebryan.com.videoapp;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
@@ -10,14 +14,18 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,8 +34,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,15 +57,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private  static final String VIDEO_PATH = "VIDEO_PATH";
     private  static final String VIDEO_NAME = "VIDEO_NAME";
+    private  static final String VIDEO_SIZE = "VIDEO_SIZE";
+    private  static final String VIDEO_DURATION = "VIDEO_DURATION";
+    private  static final String VIDEO_RESOLUTION = "VIDEO_RESOLUTION";
     private  static final String VIDEO_DATE_MODIFIED = "VIDEO_DATE_MODIFIED";
 
-    Button btn_record,btn_reload;
-    ListView lv_videolist;
-    ArrayList<Video> videoList;
-    VideoAdapter adapter;
-    ArrayList<String> filenameList;
-
+    Button btn_record;
     TextView tv_path;
+
+    ListView lv_videolist;
+    VideoAdapter adapter;
+
+    ArrayList<Video> videoList;
+    ArrayList<Video> videoListComplete;
+
+    ProgressBar progressBar, pb_reload_list;
+
+    AsyncTaskWait asyncTaskWait;
+
+    boolean flag_first=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,23 +83,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         verifyStoragePermissions(this);
         initView();
+        initListener();
         initPath();
-        //loadList();
-        new LoadList().execute("x");
-    }
-
-    private void initPath() {
-        final File dir = new File(Environment.getExternalStoragePublicDirectory("Documents").getAbsolutePath(), "AppsVideo");
-        tv_path.setText("path: "+dir.toString());
+        new ReloadCompleteList().execute();
     }
 
     private void initView() {
         tv_path = (TextView) findViewById(R.id.tv_path);
         btn_record = (Button) findViewById(R.id.btn_record);
-        btn_reload = (Button) findViewById(R.id.btn_reload);
         lv_videolist = (ListView) findViewById(R.id.lv_videolist);
+        pb_reload_list = (ProgressBar) findViewById(R.id.pb_reload_list);
+    }
+
+    private void initListener() {
         btn_record.setOnClickListener(this);
-        btn_reload.setOnClickListener(this);
         lv_videolist.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -94,17 +111,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Intent intent = new Intent(MainActivity.this,WatchVideoActivity.class);
                 intent.putExtra(VIDEO_PATH, sDirVideo);
                 intent.putExtra(VIDEO_NAME, sNameVideo);
+                intent.putExtra(VIDEO_DURATION, milliSecondsToTimer(getFileVideoDuration(sDirVideo)));
+                intent.putExtra(VIDEO_SIZE, convertSizeToString(getFileSize(sDirVideo)));
+                intent.putExtra(VIDEO_RESOLUTION, getFileVideoResolution(sDirVideo));
                 intent.putExtra(VIDEO_DATE_MODIFIED, sDateModified);
                 startActivity(intent);
             }
         });
+
+        lv_videolist.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if(scrollState == SCROLL_STATE_IDLE && lv_videolist.getLastVisiblePosition() == videoList.size()){
+                    //this is to load more items ONLY if the previous items are loaded,
+                    //and not to send two requests at the same time
+                    if(asyncTaskWait == null || asyncTaskWait.getStatus() != AsyncTask.Status
+                            .RUNNING){
+                        progressBar.setVisibility(View.VISIBLE);
+                        asyncTaskWait = new AsyncTaskWait(new WeakReference<Context>(MainActivity
+                                .this));
+                        asyncTaskWait.execute();
+                    }
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+            }
+        });
     }
 
-    private boolean loadList() {
+    private void initPath() {
+        final File dir = new File(Environment.getExternalStoragePublicDirectory("Documents").getAbsolutePath(), "AppsVideo");
+        tv_path.setText("path: "+dir.toString());
+    }
+
+    private void setListViewFirst() {
+        flag_first = true;
+        videoList = new ArrayList<>(videoListComplete.subList(0,5));
+
+        adapter = new VideoAdapter(this, videoList);
+        lv_videolist.setAdapter(adapter);
+        setListViewFooter();
+    }
+
+    private void setListViewFooter() {
+        View view = LayoutInflater.from(this).inflate(R.layout.footer_listview_progressbar, null);
+        progressBar = view.findViewById(R.id.progressBar);
+        lv_videolist.addFooterView(progressBar);
+    }
+
+    private ArrayList<Video> readListFromFolder() {
+        ArrayList<Video> readVideoList = new ArrayList<Video>();
         try {
             final File dir = new File(Environment.getExternalStoragePublicDirectory("Documents").getAbsolutePath(), "AppsVideo");
             File[] filelist = dir.listFiles();
-            filenameList = new ArrayList<String>();
 
             int loop = 0;
             if (filelist == null) {
@@ -113,36 +175,91 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 loop = filelist.length;
             }
 
-            videoList = new ArrayList<Video>();
             for (int i = 0; i < loop; i++) {
                 int lString = filelist[i].getName().length() - 4;
                 if (filelist[i].getName().substring(lString).equalsIgnoreCase(".3gp")||filelist[i].getName().substring(lString).equalsIgnoreCase(".mp4") || filelist[i].getName().substring(lString).equalsIgnoreCase(".mpg")||filelist[i].getName().substring(lString).equalsIgnoreCase(".avi")||filelist[i].getName().substring(lString).equalsIgnoreCase(".wmv")||filelist[i].getName().substring(lString).equalsIgnoreCase(".flv") ){
                     Video video = new Video();
-                    video.setVideoName(filelist[i].getName());
+                    File filevideo = getFileFromPath(dir + "/" + filelist[i].getName());
+                    Log.d("videodirComplete", dir + "/" + filelist[i].getName());
 
-                    video.setThumnail(ThumbnailUtils.createVideoThumbnail(dir + "/" + filelist[i].getName(), MediaStore.Video.Thumbnails.MINI_KIND));
-                    Log.d("videodir", dir + "/" + filelist[i].getName());
+                    video.setVideoName(filelist[i].getName());
                     video.setVideoDir(dir + "/" + filelist[i].getName());
 
-                    MediaPlayer mp = MediaPlayer.create(MainActivity.this, Uri.parse(dir + "/" + filelist[i].getName()));
-                    long duration = mp.getDuration();
-                    video.setDuration(milliSecondsToTimer(duration));
-
-                    File filevideo = new File(dir + "/" + filelist[i].getName());
+                    video.setThumnail(ThumbnailUtils.createVideoThumbnail(dir + "/" + filelist[i].getName(), MediaStore.Video.Thumbnails.MINI_KIND));
+                    video.setDuration(milliSecondsToTimer(getFileVideoDuration(dir + "/" + filelist[i].getName())));
                     video.setLastModified(getDate(filevideo.lastModified(), "EEE, d MMM yyyy HH:mm"));
-                    videoList.add(video);
+                    video.setSize(convertSizeToString(getFileSize(dir + "/" + filelist[i].getName())));
+                    video.setResolution(getFileVideoResolution(dir + "/" + filelist[i].getName()));
+
+                    readVideoList.add(video);
                 }
             }
-            return true;
         }
         catch (Exception e){
             Log.d("Exception",e.toString());
-            return false;
         }
+        return readVideoList;
     }
 
-    public static String getDate(long milliSeconds, String dateFormat)
-    {
+    private File getFileFromPath(String path){
+        return new File(path);
+    }
+
+    private String getFileVideoResolution(String path){
+        MediaMetadataRetriever metaRetriever = new MediaMetadataRetriever();
+        metaRetriever.setDataSource(path);
+        String height = metaRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+        String width = metaRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+        return width+"x"+height;
+    }
+
+    private long getFileVideoDuration(String path){
+        MediaPlayer mp = MediaPlayer.create(MainActivity.this, Uri.parse(path));
+        long duration = mp.getDuration();
+        return duration;
+    }
+
+    private int getFileSize(String path){
+        return Integer.parseInt(String.valueOf(getFileFromPath(path).length()/1024));
+    }
+
+    public String convertSizeToString(int size){
+        String hrSize = "";
+
+        double m = size/1024.0;
+        double g = size/1048576.0;
+        double t = size/1073741824.0;
+
+        DecimalFormat dec = new DecimalFormat("0.00");
+
+        if (t > 1) {
+            hrSize = dec.format(t).concat(" TB");
+        } else if (g > 1) {
+            hrSize = dec.format(g).concat(" GB");
+        } else if (m > 1) {
+            hrSize = dec.format(m).concat(" MB");
+        } else {
+            hrSize = dec.format(size).concat(" KB");
+        }
+        return hrSize;
+    }
+
+    private void reloadCompleteList(){
+        videoListComplete = readListFromFolder();
+    }
+
+    private void addMoreItems(){
+        int size = videoList.size();
+        for(int i=1;i<=5;i++){
+            if((size + i) < videoListComplete.size()){
+                videoList.add(videoListComplete.get(size + i));
+            }
+        }
+        adapter.notifyDataSetChanged();
+        progressBar.setVisibility(View.GONE);
+    }
+
+    public static String getDate(long milliSeconds, String dateFormat) {
         // Create a DateFormatter object for displaying date in specified format.
         SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
 
@@ -178,27 +295,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return finalTimerString;
     }
 
-    static String getTimeString(Long millis) {
-        return String.format("%02d:%02d:%02d",
-                TimeUnit.MILLISECONDS.toHours(millis),
-                TimeUnit.MILLISECONDS.toMinutes(millis) -
-                        TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)),
-                TimeUnit.MILLISECONDS.toSeconds(millis) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
-    }
-
-    private void setAdapterList() {
-        try {
-            adapter = new VideoAdapter(MainActivity.this, videoList);
-            lv_videolist.setAdapter(adapter);
-        }
-        catch (Exception e){
-            Log.d("ExceptionSetadapter",e.toString());
-        }
-    }
-
-
-
     public File getFilepath(){
         File filefolder = new File(Environment.getExternalStoragePublicDirectory("Documents").getAbsolutePath(), "AppsVideo");
         if (!filefolder.exists()) {
@@ -217,9 +313,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.btn_record:
                 captureVideo();
-                break;
-            case R.id.btn_reload:
-                new LoadList().execute("x");
                 break;
         }
     }
@@ -251,45 +344,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(requestCode == VIDEO_REQUEST_CODE){
             if(resultCode==RESULT_OK){
-                new LoadList().execute("x");
-            }
-            else {
-               // Toast.makeText(this, "Video Capture Failed", Toast.LENGTH_SHORT).show();
+                new ReloadCompleteList().execute();
             }
         }
     }
 
-    class LoadList extends AsyncTask<String,Integer,Boolean> {
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //the one second is over, load more data
+            addMoreItems();
+        }
+    };
+    @Override
+    protected void onResume(){
+        super.onResume();
+        IntentFilter intentFilter = new IntentFilter("result");
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, intentFilter);
+    }
+    @Override
+    protected void onPause(){
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
+        super.onPause();
+    }
 
-        ProgressDialog bar = new ProgressDialog(MainActivity.this);
+    class ReloadCompleteList extends AsyncTask<Void, Void, Void> {
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            bar.setCancelable(false);
-            bar.setMessage("Loading...");
-            bar.setIndeterminate(true);
-            bar.setCanceledOnTouchOutside(false);
-            bar.show();
+            pb_reload_list.setVisibility(View.VISIBLE);
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
-            // TODO Auto-generated method stub
-            super.onPostExecute(result);
-            bar.dismiss();
-            if(result){
-                Toast.makeText(getApplicationContext(),"Load Done",      Toast.LENGTH_SHORT).show();
-                setAdapterList();
+        protected Void doInBackground(Void... voids) {
+            try{
+                reloadCompleteList();
+            }catch (Exception e){
+                Log.d("Exception Load",e.toString());
             }
-            else {
-                Toast.makeText(getApplicationContext(),"Load Error",      Toast.LENGTH_SHORT).show();
-            }
-
+            return null;
         }
+
         @Override
-        protected Boolean doInBackground(String... f_name) {
-            return loadList();
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            if(!flag_first) {
+                setListViewFirst();
+            }
+            pb_reload_list.setVisibility(View.GONE);
         }
     }
+
 
 }

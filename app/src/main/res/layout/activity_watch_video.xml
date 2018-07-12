@@ -4,8 +4,26 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorGrey"
+    android:background="@android:color/white"
     tools:context=".WatchVideoActivity">
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_marginTop="5dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/ic_keyboard_arrow_left_black_24dp"
+        android:backgroundTint="@color/colorGrey"/>
+    <Button
+        android:id="@+id/btn_action"
+        android:layout_marginTop="5dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:background="@drawable/ic_more_vert_black_24dp"
+        android:backgroundTint="@color/colorGrey"/>
     <ScrollView
         android:id="@+id/sv_content"
         android:layout_width="match_parent"
@@ -28,46 +46,149 @@
                     android:layout_alignParentLeft="true"
                     android:layout_alignParentRight="true"
                     android:layout_alignParentTop="true"/>
-                <Button
-                    android:id="@+id/btn_back"
-                    android:layout_marginTop="5dp"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentTop="true"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/ic_keyboard_arrow_left_black_24dp"
-                    android:backgroundTint="@color/colorGrey"/>
-                <Button
-                    android:id="@+id/btn_action"
-                    android:layout_marginTop="5dp"
-                    android:layout_alignParentRight="true"
-                    android:layout_alignParentTop="true"
-                    android:layout_width="35dp"
-                    android:layout_height="35dp"
-                    android:background="@drawable/ic_more_vert_black_24dp"
-                    android:backgroundTint="@color/colorGrey"/>
             </RelativeLayout>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@android:color/white"
-                android:padding="10dp"
-                android:elevation="10dp">
-                <TextView
-                    android:id="@+id/tv_title_video"
+                android:background="@color/colorGrey">
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Title"
-                    android:textSize="@dimen/font_size_heading_2"
-                    android:gravity="center_vertical"
-                    android:layout_gravity="center_vertical"
-                    android:textColor="@android:color/black"/>
-                <TextView
-                    android:id="@+id/tv_video_modified"
-                    android:layout_width="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Title"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_title_video"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="video_name"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="datemodified"/>
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:layout_marginTop="1dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Modified"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_video_modified"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="date_modified"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:layout_marginTop="1dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Duration"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_video_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="00:00"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:layout_marginTop="1dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Size"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_video_size"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="0 MB"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:layout_marginTop="1dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Resolution"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_video_resolution"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="000x000"/>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="15dp"
+                    android:layout_marginTop="1dp"
+                    android:background="@android:color/white"
+                    android:foreground="?android:attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Path"
+                        android:textSize="@dimen/font_size_heading_4"
+                        android:gravity="center_vertical"
+                        android:layout_gravity="center_vertical"
+                        android:textColor="@android:color/black"/>
+                    <TextView
+                        android:id="@+id/tv_video_path"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_heading_5"
+                        android:text="000x000"/>
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
